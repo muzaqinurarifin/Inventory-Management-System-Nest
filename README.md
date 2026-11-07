@@ -2,10 +2,11 @@
 
 Proyek ini disusun untuk memenuhi Ujian Tengah Semester (UTS) mata kuliah **Framework Programming**. Aplikasi ini merupakan RESTful API berbasis **NestJS** untuk mengelola data inventaris gudang, mencakup manajemen produk, kategori, pemasok, gudang penyimpanan, serta pencatatan transaksi keluar-masuk barang beserta perhitungan stok otomatis.
 
-## 👥 Anggota Kelompok
-* **[Nama Anggota 1]** - [NIM]
-* **[Nama Anggota 2]** - [NIM]
-* **[Nama Anggota 3]** - [NIM]
+## 👥 Anggota Kelompok Capstone
+* **[Intan Tri Hartati]** - [24090039]
+* **[Muhammad Hammam Ghazi]** - [24090056]
+* **[Muhammad Zaim El Yafi]** - [24090064]
+* **[Muzaqi Nur Arifin]** - [24090132]
 
 ---
 
