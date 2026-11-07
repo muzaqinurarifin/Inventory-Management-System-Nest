@@ -6,20 +6,21 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { StockMovement } from '../../stock-movements/entities/stock-movement.entity.js';
 import { Product } from '../../products/entities/product.entity.js';
 
 @Entity('stock_movement_items')
 export class StockMovementItem {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column({ name: 'stock_movement_id' })
-  stockMovementId: number;
+  @Column({ name: 'stock_movement_id', type: 'uuid' })
+  stockMovementId: string;
 
-  @Column({ name: 'product_id' })
-  productId: number;
+  @Column({ name: 'product_id', type: 'uuid' })
+  productId: string;
 
   @Column({ type: 'int' })
   quantity: number;
@@ -44,4 +45,7 @@ export class StockMovementItem {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt: Date | null;
 }

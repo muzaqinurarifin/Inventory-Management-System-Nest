@@ -31,10 +31,10 @@ export class WarehousesService {
     return this.warehouseRepo.find();
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const warehouse = await this.warehouseRepo.findOne({
       where: { id },
-      relations: ['stockMovements'],
+      relations: {stockMovements: true},
     });
     if (!warehouse) {
       throw new NotFoundException(`Gudang dengan ID ${id} tidak ditemukan`);
@@ -42,15 +42,15 @@ export class WarehousesService {
     return warehouse;
   }
 
-  async update(id: number, dto: UpdateWarehouseDto) {
+  async update(id: string, dto: UpdateWarehouseDto) {
     const warehouse = await this.findOne(id);
     Object.assign(warehouse, dto);
     return this.warehouseRepo.save(warehouse);
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const warehouse = await this.findOne(id);
-    await this.warehouseRepo.remove(warehouse);
+    await this.warehouseRepo.softRemove(warehouse);
     return { message: `Gudang ${warehouse.name} berhasil dihapus` };
   }
 }

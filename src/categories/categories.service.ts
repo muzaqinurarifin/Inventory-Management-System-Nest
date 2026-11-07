@@ -28,13 +28,13 @@ export class CategoriesService {
   }
 
   findAll() {
-    return this.categoryRepo.find({ relations: ['products'] });
+    return this.categoryRepo.find({ relations: { products: true } });
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const category = await this.categoryRepo.findOne({
       where: { id },
-      relations: ['products'],
+      relations: { products: true },
     });
     if (!category) {
       throw new NotFoundException(`Kategori dengan ID ${id} tidak ditemukan`);
@@ -42,15 +42,15 @@ export class CategoriesService {
     return category;
   }
 
-  async update(id: number, dto: UpdateCategoryDto) {
+  async update(id: string, dto: UpdateCategoryDto) {
     const category = await this.findOne(id);
     Object.assign(category, dto);
     return this.categoryRepo.save(category);
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const category = await this.findOne(id);
-    await this.categoryRepo.remove(category);
+    await this.categoryRepo.softRemove(category);
     return { message: `Kategori ${category.name} berhasil dihapus` };
   }
 }

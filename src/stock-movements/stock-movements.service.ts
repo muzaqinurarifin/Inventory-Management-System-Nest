@@ -39,16 +39,25 @@ export class StockMovementsService {
     const whereCondition = type ? { type } : {};
     return this.movementRepo.find({
       where: whereCondition,
-      relations: ['warehouse', 'items', 'items.product'],
-      
+      relations: {
+        warehouse: true,
+        items: {
+          product: true,
+        },
+      },
       order: { movementDate: 'DESC', id: 'DESC' },
     });
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const movement = await this.movementRepo.findOne({
       where: { id },
-      relations: ['warehouse', 'items', 'items.product'],
+      relations: {
+        warehouse: true,
+        items: {
+          product: true,
+        },
+      },
     });
     if (!movement) {
       throw new NotFoundException(
@@ -58,7 +67,7 @@ export class StockMovementsService {
     return movement;
   }
 
-  async update(id: number, dto: UpdateStockMovementDto) {
+  async update(id: string, dto: UpdateStockMovementDto) {
     const movement = await this.findOne(id);
     if (dto.warehouseId) {
       await this.warehousesService.findOne(dto.warehouseId);
@@ -67,9 +76,9 @@ export class StockMovementsService {
     return this.movementRepo.save(movement);
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const movement = await this.findOne(id);
-    await this.movementRepo.remove(movement);
+    await this.movementRepo.softRemove(movement);
     return {
       message: `Transaksi stok ${movement.referenceNumber} berhasil dihapus`,
     };

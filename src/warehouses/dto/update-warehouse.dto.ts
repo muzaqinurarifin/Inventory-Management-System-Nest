@@ -1,4 +1,32 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateWarehouseDto } from './create-warehouse.dto.js';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
-export class UpdateWarehouseDto extends PartialType(CreateWarehouseDto) {}
+export class UpdateWarehouseDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(30)
+  @IsOptional()
+  code?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  location?: string;
+
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  capacity?: number;
+}

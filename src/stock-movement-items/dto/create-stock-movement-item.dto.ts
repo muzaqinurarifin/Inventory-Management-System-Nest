@@ -1,14 +1,21 @@
 // src/stock-movement-items/dto/create-stock-movement-item.dto.ts
-import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+} from 'class-validator';
 
 export class CreateStockMovementItemDto {
-  @IsInt()
+  @IsUUID()
   @IsNotEmpty()
-  stockMovementId: number;
+  stockMovementId: string;
 
-  @IsInt()
+  @IsUUID()
   @IsNotEmpty()
-  productId: number;
+  productId: string;
 
   @IsInt()
   @Min(1, { message: 'Kuantitas barang minimal 1' })

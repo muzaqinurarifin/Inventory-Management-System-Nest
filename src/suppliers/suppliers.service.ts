@@ -28,13 +28,13 @@ export class SuppliersService {
   }
 
   findAll() {
-    return this.supplierRepo.find({ relations: ['products'] });
+    return this.supplierRepo.find({ relations: { products: true } });
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const supplier = await this.supplierRepo.findOne({
       where: { id },
-      relations: ['products'],
+      relations: { products: true },
     });
     if (!supplier) {
       throw new NotFoundException(`Pemasok dengan ID ${id} tidak ditemukan`);
@@ -42,15 +42,15 @@ export class SuppliersService {
     return supplier;
   }
 
-  async update(id: number, dto: UpdateSupplierDto) {
+  async update(id: string, dto: UpdateSupplierDto) {
     const supplier = await this.findOne(id);
     Object.assign(supplier, dto);
     return this.supplierRepo.save(supplier);
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const supplier = await this.findOne(id);
-    await this.supplierRepo.remove(supplier);
+    await this.supplierRepo.softRemove(supplier);
     return { message: `Pemasok ${supplier.name} berhasil dihapus` };
   }
 }

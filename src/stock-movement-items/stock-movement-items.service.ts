@@ -69,7 +69,7 @@ export class StockMovementItemsService {
     });
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const item = await this.itemRepo.findOne({
       where: { id },
       relations: {
@@ -85,7 +85,7 @@ export class StockMovementItemsService {
     return item;
   }
 
-  async update(id: number, dto: UpdateStockMovementItemDto) {
+  async update(id: string, dto: UpdateStockMovementItemDto) {
     const item = await this.findOne(id);
     const product = await this.productRepo.findOne({
       where: { id: item.productId },
@@ -122,7 +122,7 @@ export class StockMovementItemsService {
     return this.itemRepo.save(item);
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const item = await this.findOne(id);
     const product = await this.productRepo.findOne({
       where: { id: item.productId },
@@ -143,7 +143,7 @@ export class StockMovementItemsService {
       await this.productRepo.save(product);
     }
 
-    await this.itemRepo.remove(item);
+    await this.itemRepo.softRemove(item);
     return {
       message: `Item transaksi ID ${id} berhasil dihapus dan stok produk telah diperbarui`,
     };

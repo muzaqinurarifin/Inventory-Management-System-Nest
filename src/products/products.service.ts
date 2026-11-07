@@ -48,7 +48,7 @@ export class ProductsService {
     });
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const product = await this.productRepo.findOne({
       where: { id },
       relations: {
@@ -63,7 +63,7 @@ export class ProductsService {
   }
 
   // Fitur Utama 5: Menampilkan informasi stok produk beserta rekap transaksi IN dan OUT
-  async getProductStockInfo(id: number) {
+  async getProductStockInfo(id: string) {
     const product = await this.productRepo.findOne({
       where: { id },
       relations: {
@@ -105,7 +105,7 @@ export class ProductsService {
     };
   }
 
-  async update(id: number, dto: UpdateProductDto) {
+  async update(id: string, dto: UpdateProductDto) {
     const product = await this.findOne(id);
     if (dto.categoryId) await this.categoriesService.findOne(dto.categoryId);
     if (dto.supplierId) await this.suppliersService.findOne(dto.supplierId);
@@ -114,9 +114,9 @@ export class ProductsService {
     return this.productRepo.save(product);
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const product = await this.findOne(id);
-    await this.productRepo.remove(product);
+    await this.productRepo.softRemove(product);
     return { message: `Produk ${product.name} berhasil dihapus` };
   }
 }

@@ -7,6 +7,7 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { Warehouse } from '../../warehouses/entities/warehouse.entity.js';
 import { StockMovementItem } from '../../stock-movement-items/entities/stock-movement-item.entity.js';
@@ -18,8 +19,8 @@ export enum MovementType {
 
 @Entity('stock_movements')
 export class StockMovement {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ unique: true, length: 50 })
   referenceNumber: string; // Contoh: TRX-IN-2026001
@@ -36,8 +37,8 @@ export class StockMovement {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
-  @Column({ name: 'warehouse_id' })
-  warehouseId: number;
+  @Column({ name: 'warehouse_id', type: 'uuid' })
+  warehouseId: string;
 
   @ManyToOne(() => Warehouse, (warehouse) => warehouse.stockMovements, {
     onDelete: 'RESTRICT',
@@ -45,7 +46,9 @@ export class StockMovement {
   @JoinColumn({ name: 'warehouse_id' })
   warehouse: Warehouse;
 
-  @OneToMany(() => StockMovementItem, (item) => item.stockMovement)
+  @OneToMany(() => StockMovementItem, (item) => item.stockMovement, {
+    cascade: ['soft-remove'],
+  })
   items: StockMovementItem[];
 
   @CreateDateColumn()
@@ -53,4 +56,7 @@ export class StockMovement {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt: Date | null;
 }

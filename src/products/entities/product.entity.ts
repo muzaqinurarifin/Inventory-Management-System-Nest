@@ -7,6 +7,7 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { Category } from '../../categories/entities/category.entity.js';
 import { Supplier } from '../../suppliers/entities/supplier.entity.js';
@@ -15,7 +16,7 @@ import { StockMovementItem } from '../../stock-movement-items/entities/stock-mov
 @Entity('products')
 export class Product {
   @PrimaryGeneratedColumn('uuid')
-  id: number;
+  id: string;
 
   @Column({ unique: true, length: 50 })
   sku: string; // Kode unik barang, contoh: PRD-ELK-001
@@ -32,11 +33,11 @@ export class Product {
   @Column({ type: 'int', default: 0 })
   currentStock: number; // Stok aktif yang otomatis bertambah/berkurang dari transaksi
 
-  @Column({ name: 'category_id' })
-  categoryId: number;
+  @Column({ name: 'category_id', type: 'uuid' })
+  categoryId: string;
 
-  @Column({ name: 'supplier_id' })
-  supplierId: number;
+  @Column({ name: 'supplier_id', type: 'uuid' })
+  supplierId: string;
 
   @ManyToOne(() => Category, (category) => category.products, {
     onDelete: 'RESTRICT',
@@ -58,4 +59,7 @@ export class Product {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt: Date | null;
 }

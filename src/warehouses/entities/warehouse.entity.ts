@@ -5,13 +5,14 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { StockMovement } from '../../stock-movements/entities/stock-movement.entity.js';
 
 @Entity('warehouses')
 export class Warehouse {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ unique: true, length: 30 })
   code: string; // Contoh: WH-JKT-01
@@ -33,4 +34,7 @@ export class Warehouse {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt: Date | null;
 }

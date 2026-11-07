@@ -2,10 +2,10 @@
 import {
   IsDateString,
   IsEnum,
-  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
 } from 'class-validator';
 import { MovementType } from '../entities/stock-movement.entity.js';
@@ -26,9 +26,9 @@ export class CreateStockMovementDto {
   @IsNotEmpty()
   movementDate: string; // Format: YYYY-MM-DD
 
-  @IsInt()
+  @IsUUID()
   @IsNotEmpty()
-  warehouseId: number;
+  warehouseId: string;
 
   @IsString()
   @IsOptional()

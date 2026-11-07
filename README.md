@@ -291,8 +291,8 @@ Base URL: `http://localhost:3000`
   "name": "Mechanical Keyboard Wireless",
   "unit": "unit",
   "price": 750000,
-  "categoryId": 1,
-  "supplierId": 1
+  "categoryId": "550e8400-e29b-41d4-a716-446655440000",
+  "supplierId": "550e8400-e29b-41d4-a716-446655440001"
 }
 ```
 
@@ -313,7 +313,7 @@ Base URL: `http://localhost:3000`
   "referenceNumber": "TRX-IN-20261101",
   "type": "IN",
   "movementDate": "2026-11-07",
-  "warehouseId": 1,
+  "warehouseId": "550e8400-e29b-41d4-a716-446655440002",
   "notes": "Pengadaan stok awal dari supplier"
 }
 ```
@@ -332,8 +332,8 @@ Base URL: `http://localhost:3000`
 **Contoh Request Body (`POST /stock-movement-items`):**
 ```json
 {
-  "stockMovementId": 1,
-  "productId": 1,
+  "stockMovementId": "550e8400-e29b-41d4-a716-446655440003",
+  "productId": "550e8400-e29b-41d4-a716-446655440004",
   "quantity": 50,
   "remarks": "Kondisi segel baik"
 }
@@ -352,5 +352,5 @@ Untuk mendemonstrasikan aplikasi secara menyeluruh, jalankan *request* pada Post
 6. **`POST /stock-movement-items`** — Masukkan produk beserta kuantitas barang masuk (misal: `50`).
 7. **`POST /stock-movements`** — Buat transaksi keluar dengan `"type": "OUT"`.
 8. **`POST /stock-movement-items`** — Masukkan produk beserta kuantitas barang keluar (misal: `15`).
-9. **`GET /products/1/stock-info`** — Periksa hasil perhitungan stok (`totalIn: 50`, `totalOut: 15`, `currentStock: 35`).
+9. **`GET /products/:id/stock-info`** — Ganti `:id` dengan UUID produk, lalu periksa hasil perhitungan stok (`totalIn: 50`, `totalOut: 15`, `currentStock: 35`).
 10. **Uji Validasi Error (`400 Bad Request`):** Coba kirim `POST /stock-movement-items` pada transaksi `OUT` dengan `quantity: 100` (melebihi sisa stok `35`) untuk membuktikan sistem menolak stok minus.
