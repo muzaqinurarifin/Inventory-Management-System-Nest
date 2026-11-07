@@ -1,0 +1,20 @@
+services:
+#  nama service container database
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: apifirst_postgres_cotainer
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mnurar245
+      POSTGRES_DB: apifirstnestjs
+    ports:
+    # Format: "hostPort:containerPort"
+      - "5432:5432"
+      # port 3306 jika ingin menggunakan mysql
+    volumes:
+    # Menyimpan data databse ke dalam volume disk laptop agar data tidak hilang ketika container dihapus
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:
