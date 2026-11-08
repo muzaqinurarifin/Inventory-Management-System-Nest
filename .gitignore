@@ -7,6 +7,10 @@
 docs/*.pdf
 docs/laporan-penilaian.html
 
+# hasil pengujian lokal
+postman/
+.tmp-*
+
 # TypeScript build cache
 *.tsbuildinfo
 

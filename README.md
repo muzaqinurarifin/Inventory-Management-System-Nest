@@ -249,9 +249,6 @@ npm run start:dev
 Aplikasi akan berjalan di **`http://localhost:3000`**. Tabel-tabel database akan otomatis dibuat oleh TypeORM (`synchronize: true`).
 Untuk penggunaan lokal, nilai `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE`, dan `DB_PORT` harus cocok dengan konfigurasi Docker Compose. `DB_HOST=localhost` digunakan karena aplikasi dijalankan langsung di host, bukan di dalam container.
 
-### 6. Mengimpor Koleksi Postman
-Di Postman, impor koleksi **`postman/Inventory-Management-API.postman_collection.json`** dan environment **`postman/Inventory-Local.postman_environment.json`**, lalu pilih environment **Inventory Local**. Environment menggunakan `baseUrl` untuk alamat API lokal. Jalankan request sesuai urutan; setelah membuat data, salin UUID dari response ke variabel koleksi terkait (`categoryId`, `supplierId`, `warehouseId`, `productId`, dan seterusnya) sebelum menjalankan request yang membutuhkannya.
-
 ---
 
 ## 📡 API Specification
@@ -391,7 +388,7 @@ Semua endpoint `DELETE` melakukan *soft delete*: data ditandai melalui `deletedA
 
 ---
 
-## 🧪 Urutan Skenario Pengujian di Postman
+## 🧪 Urutan Skenario Pengujian Endpoint
 
 Untuk mendemonstrasikan aplikasi secara menyeluruh, jalankan *request* pada Postman dengan urutan berikut:
 1. **`POST /categories`** — Buat data kategori terlebih dahulu.
