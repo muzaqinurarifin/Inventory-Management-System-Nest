@@ -3,6 +3,10 @@
 /node_modules
 /build
 
+# dokumen lokal
+docs/*.pdf
+docs/laporan-penilaian.html
+
 # TypeScript build cache
 *.tsbuildinfo
 
