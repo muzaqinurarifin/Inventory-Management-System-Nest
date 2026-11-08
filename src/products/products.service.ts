@@ -62,7 +62,7 @@ export class ProductsService {
     return product;
   }
 
-  // Fitur Utama 5: Menampilkan informasi stok produk beserta rekap transaksi IN dan OUT
+  // ringkasan stok dan histori transaksi produk
   async getProductStockInfo(id: string) {
     const product = await this.productRepo.findOne({
       where: { id },

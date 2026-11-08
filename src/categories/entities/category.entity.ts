@@ -6,6 +6,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  type Relation,
 } from 'typeorm';
 import { Product } from '../../products/entities/product.entity.js';
 
@@ -21,7 +22,7 @@ export class Category {
   description: string;
 
   @OneToMany(() => Product, (product) => product.category)
-  products: Product[];
+  products: Relation<Product[]>;
 
   @CreateDateColumn()
   createdAt: Date;

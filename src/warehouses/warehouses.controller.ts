@@ -1,4 +1,3 @@
-// src/warehouses/warehouses.controller.ts
 import {
   Controller,
   Get,

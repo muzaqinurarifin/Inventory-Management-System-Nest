@@ -1,4 +1,3 @@
-// src/stock-movements/dto/create-stock-movement.dto.ts
 import {
   IsDateString,
   IsEnum,
@@ -24,7 +23,7 @@ export class CreateStockMovementDto {
 
   @IsDateString()
   @IsNotEmpty()
-  movementDate: string; // Format: YYYY-MM-DD
+  movementDate: string; // format: yyyy-mm-dd
 
   @IsUUID()
   @IsNotEmpty()

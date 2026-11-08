@@ -42,7 +42,7 @@ export class StockMovementItemsService {
       throw new NotFoundException(`Produk ID ${dto.productId} tidak ditemukan`);
     }
 
-    // Logika perhitungan stok berdasarkan jenis transaksi (IN / OUT)
+    // hitung stok berdasarkan jenis transaksi
     if (movement.type === MovementType.IN) {
       product.currentStock += dto.quantity;
     } else if (movement.type === MovementType.OUT) {
@@ -91,19 +91,19 @@ export class StockMovementItemsService {
       where: { id: item.productId },
     });
     if (!product) {
-      throw new NotFoundException(`Produk tidak ditemukan`);
+      throw new NotFoundException('Produk tidak ditemukan');
     }
 
-    // Jika kuantitas diubah, hitung selisihnya terhadap stok produk
+    // kalau kuantitas berubah, sesuaikan stok berdasarkan selisihnya
     if (dto.quantity !== undefined && dto.quantity !== item.quantity) {
-      // 1. Kembalikan (rollback) efek kuantitas lama
+      // kembalikan efek kuantitas lama
       if (item.stockMovement.type === MovementType.IN) {
         product.currentStock -= item.quantity;
       } else {
         product.currentStock += item.quantity;
       }
 
-      // 2. Terapkan kuantitas baru
+      // terapkan kuantitas baru
       if (item.stockMovement.type === MovementType.IN) {
         product.currentStock += dto.quantity;
       } else {
@@ -128,7 +128,7 @@ export class StockMovementItemsService {
       where: { id: item.productId },
     });
 
-    // Kembalikan stok produk ke kondisi semula sebelum item dihapus
+    // kembalikan stok produk seperti sebelum item dihapus
     if (product && item.stockMovement) {
       if (item.stockMovement.type === MovementType.IN) {
         if (product.currentStock < item.quantity) {

@@ -34,7 +34,7 @@ export class StockMovementsService {
     return this.movementRepo.save(movement);
   }
 
-  // Bisa difilter berdasarkan tipe (?type=IN atau ?type=OUT)
+  // bisa difilter berdasarkan tipe transaksi
   findAll(type?: MovementType) {
     const whereCondition = type ? { type } : {};
     return this.movementRepo.find({

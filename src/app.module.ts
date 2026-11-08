@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
@@ -10,6 +10,7 @@ import { StockMovementsModule } from './stock-movements/stock-movements.module.j
 import { StockMovementItemsModule } from './stock-movement-items/stock-movement-items.module.js';
 import Joi from 'joi';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { SimpleLoggerMiddleware } from './middlewares/simple-logger/simple-logger.middleware.js';
 
 @Module({
   imports: [
@@ -47,4 +48,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(SimpleLoggerMiddleware).forRoutes('*');
+  }
+}

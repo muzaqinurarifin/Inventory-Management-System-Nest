@@ -8,6 +8,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  type Relation,
 } from 'typeorm';
 import { Category } from '../../categories/entities/category.entity.js';
 import { Supplier } from '../../suppliers/entities/supplier.entity.js';
@@ -19,19 +20,19 @@ export class Product {
   id: string;
 
   @Column({ unique: true, length: 50 })
-  sku: string; // Kode unik barang, contoh: PRD-ELK-001
+  sku: string; // kode unik barang, contoh: prd-elk-001
 
   @Column({ length: 150 })
   name: string;
 
   @Column({ length: 30, default: 'pcs' })
-  unit: string; // Satuan: pcs, box, unit, kg
+  unit: string; // satuan: pcs, box, unit, kg
 
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
   price: number;
 
   @Column({ type: 'int', default: 0 })
-  currentStock: number; // Stok aktif yang otomatis bertambah/berkurang dari transaksi
+  currentStock: number; // stok aktif yang otomatis bertambah/berkurang dari transaksi
 
   @Column({ name: 'category_id', type: 'uuid' })
   categoryId: string;
@@ -43,16 +44,16 @@ export class Product {
     onDelete: 'RESTRICT',
   })
   @JoinColumn({ name: 'category_id' })
-  category: Category;
+  category: Relation<Category>;
 
   @ManyToOne(() => Supplier, (supplier) => supplier.products, {
     onDelete: 'RESTRICT',
   })
   @JoinColumn({ name: 'supplier_id' })
-  supplier: Supplier;
+  supplier: Relation<Supplier>;
 
   @OneToMany(() => StockMovementItem, (item) => item.product)
-  stockMovementItems: StockMovementItem[];
+  stockMovementItems: Relation<StockMovementItem[]>;
 
   @CreateDateColumn()
   createdAt: Date;

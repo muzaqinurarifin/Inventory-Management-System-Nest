@@ -1,4 +1,3 @@
-// src/stock-movement-items/stock-movement-items.controller.ts
 import {
   Controller,
   Get,

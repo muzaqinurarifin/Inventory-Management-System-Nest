@@ -7,6 +7,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  type Relation,
 } from 'typeorm';
 import { StockMovement } from '../../stock-movements/entities/stock-movement.entity.js';
 import { Product } from '../../products/entities/product.entity.js';
@@ -26,19 +27,19 @@ export class StockMovementItem {
   quantity: number;
 
   @Column({ type: 'text', nullable: true })
-  remarks: string; // Catatan kondisi barang per item
+  remarks: string; // catatan kondisi barang per item
 
   @ManyToOne(() => StockMovement, (movement) => movement.items, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'stock_movement_id' })
-  stockMovement: StockMovement;
+  stockMovement: Relation<StockMovement>;
 
   @ManyToOne(() => Product, (product) => product.stockMovementItems, {
     onDelete: 'RESTRICT',
   })
   @JoinColumn({ name: 'product_id' })
-  product: Product;
+  product: Relation<Product>;
 
   @CreateDateColumn()
   createdAt: Date;

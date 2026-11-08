@@ -1,4 +1,3 @@
-// src/products/products.controller.ts
 import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe } from '@nestjs/common';
 import { ProductsService } from './products.service.js';
 import { CreateProductDto } from './dto/create-product.dto.js';
@@ -18,7 +17,7 @@ export class ProductsController {
     return this.productsService.findAll();
   }
 
-  // Endpoint khusus menampilkan ringkasan stok & histori pergerakan stok produk
+  // ringkasan stok dan histori transaksi produk
   @Get(':id/stock-info')
   getStockInfo(@Param('id', ParseUUIDPipe) id: string) {
     return this.productsService.getProductStockInfo(id);

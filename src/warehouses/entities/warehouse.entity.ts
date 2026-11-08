@@ -6,6 +6,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  type Relation,
 } from 'typeorm';
 import { StockMovement } from '../../stock-movements/entities/stock-movement.entity.js';
 
@@ -15,7 +16,7 @@ export class Warehouse {
   id: string;
 
   @Column({ unique: true, length: 30 })
-  code: string; // Contoh: WH-JKT-01
+  code: string; // contoh: wh-jkt-01
 
   @Column({ length: 100 })
   name: string;
@@ -27,7 +28,7 @@ export class Warehouse {
   capacity: number;
 
   @OneToMany(() => StockMovement, (movement) => movement.warehouse)
-  stockMovements: StockMovement[];
+  stockMovements: Relation<StockMovement[]>;
 
   @CreateDateColumn()
   createdAt: Date;

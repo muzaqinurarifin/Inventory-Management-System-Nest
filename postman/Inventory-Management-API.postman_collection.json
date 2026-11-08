@@ -1,0 +1,1349 @@
+{
+  "info": {
+    "_postman_id": "b7c1e3a2-4f5d-4a6e-9c1b-7d2e8f3a5c60",
+    "name": "Inventory Management API",
+    "description": "Koleksi pengujian end-to-end REST API Sistem Pengelolaan Persediaan Barang (NestJS).\n\nUrutan folder sudah dirancang agar saling bergantung (ID disimpan otomatis ke collection variable), jadi jalankan dengan Collection Runner / newman dari atas ke bawah.\n\nBase URL default: http://localhost:3000",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 - Health Check",
+      "item": [
+        {
+          "name": "GET / (Health)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Mengembalikan Hello World!', () => pm.expect(pm.response.text()).to.eql('Hello World!'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "01 - Categories",
+      "item": [
+        {
+          "name": "Create Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('ID kategori terbentuk (UUID)', () => pm.expect(res.id).to.match(/^[0-9a-f-]{36}$/i));",
+                  "pm.test('Nama kategori sesuai', () => pm.expect(res.name).to.match(/^Elektronik Uji [0-9]+$/));",
+                  "pm.test('Deskripsi tersimpan', () => pm.expect(res.description).to.eql('Kategori untuk pengujian otomatis'));",
+                  "pm.collectionVariables.set('categoryId', res.id);",
+                  "pm.collectionVariables.set('categoryName', res.name);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Elektronik Uji {{$timestamp}}\",\n  \"description\": \"Kategori untuk pengujian otomatis\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/categories"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Response berupa array', () => pm.expect(res).to.be.an('array'));",
+                  "pm.test('Kategori baru ada di daftar', () => pm.expect(res.some((c) => c.id === pm.collectionVariables.get('categoryId'))).to.be.true);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/categories"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Category By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('ID sama dengan yang dibuat', () => pm.expect(res.id).to.eql(pm.collectionVariables.get('categoryId')));",
+                  "pm.test('Memuat relasi products', () => pm.expect(res).to.have.property('products'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/categories/{{categoryId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Deskripsi berhasil diperbarui', () => pm.expect(res.description).to.eql('Deskripsi setelah update'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Deskripsi setelah update\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/categories/{{categoryId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 - Suppliers",
+      "item": [
+        {
+          "name": "Create Supplier",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('ID supplier terbentuk', () => pm.expect(res.id).to.be.a('string'));",
+                  "pm.test('Email tersimpan', () => pm.expect(res.email).to.match(/^sales[0-9]+@example\\.com$/));",
+                  "pm.collectionVariables.set('supplierId', res.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"PT Sumber Teknologi Jaya\",\n  \"contactPerson\": \"Budi Raharjo\",\n  \"phone\": \"081234567890\",\n  \"email\": \"sales{{$timestamp}}@example.com\",\n  \"address\": \"Kawasan Industri Pulogadung, Jakarta\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/suppliers"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Suppliers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Response berupa array', () => pm.expect(res).to.be.an('array'));",
+                  "pm.test('Supplier baru ada di daftar', () => pm.expect(res.some((s) => s.id === pm.collectionVariables.get('supplierId'))).to.be.true);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/suppliers"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Supplier By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('ID sama dengan yang dibuat', () => pm.expect(res.id).to.eql(pm.collectionVariables.get('supplierId')));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/suppliers/{{supplierId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Supplier",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Nomor telepon berhasil diperbarui', () => pm.expect(res.phone).to.eql('081298765432'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"081298765432\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/suppliers/{{supplierId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 - Warehouses",
+      "item": [
+        {
+          "name": "Create Warehouse",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('ID gudang terbentuk', () => pm.expect(res.id).to.be.a('string'));",
+                  "pm.test('Kapasitas tersimpan', () => pm.expect(Number(res.capacity)).to.eql(5000));",
+                  "pm.collectionVariables.set('warehouseId', res.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"GDG-UTR-{{$timestamp}}\",\n  \"name\": \"Gudang Utama Utara\",\n  \"location\": \"Blok A No. 12\",\n  \"capacity\": 5000\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/warehouses"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Warehouses",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Response berupa array', () => pm.expect(res).to.be.an('array'));",
+                  "pm.test('Gudang baru ada di daftar', () => pm.expect(res.some((w) => w.id === pm.collectionVariables.get('warehouseId'))).to.be.true);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/warehouses"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Warehouse By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('ID sama dengan yang dibuat', () => pm.expect(res.id).to.eql(pm.collectionVariables.get('warehouseId')));",
+                  "pm.test('Memuat relasi stockMovements', () => pm.expect(res).to.have.property('stockMovements'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/warehouses/{{warehouseId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Warehouse",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Lokasi berhasil diperbarui', () => pm.expect(res.location).to.eql('Blok B No. 7'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"location\": \"Blok B No. 7\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/warehouses/{{warehouseId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 - Products",
+      "item": [
+        {
+          "name": "Create Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('ID produk terbentuk', () => pm.expect(res.id).to.be.a('string'));",
+                  "pm.test('Stok awal = 0', () => pm.expect(Number(res.currentStock)).to.eql(0));",
+                  "pm.test('Harga tersimpan', () => pm.expect(Number(res.price)).to.eql(750000));",
+                  "pm.test('categoryId sesuai', () => pm.expect(res.categoryId).to.eql(pm.collectionVariables.get('categoryId')));",
+                  "pm.test('supplierId sesuai', () => pm.expect(res.supplierId).to.eql(pm.collectionVariables.get('supplierId')));",
+                  "pm.collectionVariables.set('productId', res.id);",
+                  "pm.collectionVariables.set('productSku', res.sku);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"PRD-{{$timestamp}}\",\n  \"name\": \"Mechanical Keyboard Wireless\",\n  \"unit\": \"unit\",\n  \"price\": 750000,\n  \"categoryId\": \"{{categoryId}}\",\n  \"supplierId\": \"{{supplierId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/products"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Response berupa array', () => pm.expect(res).to.be.an('array'));",
+                  "pm.test('Produk baru ada di daftar', () => pm.expect(res.some((p) => p.id === pm.collectionVariables.get('productId'))).to.be.true);",
+                  "pm.test('Relasi category & supplier ikut dimuat', () => {",
+                  "  const product = res.find((p) => p.id === pm.collectionVariables.get('productId'));",
+                  "  pm.expect(product.category).to.be.an('object');",
+                  "  pm.expect(product.supplier).to.be.an('object');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/products"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('ID sama dengan yang dibuat', () => pm.expect(res.id).to.eql(pm.collectionVariables.get('productId')));",
+                  "pm.test('Stok masih 0 sebelum transaksi', () => pm.expect(Number(res.currentStock)).to.eql(0));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/products/{{productId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Nama produk berhasil diperbarui', () => pm.expect(res.name).to.eql('Mechanical Keyboard Wireless V2'));",
+                  "pm.test('Harga berhasil diperbarui', () => pm.expect(Number(res.price)).to.eql(800000));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mechanical Keyboard Wireless V2\",\n  \"price\": 800000\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/products/{{productId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 - Stock Movements (IN / OUT)",
+      "item": [
+        {
+          "name": "Create Stock Movement IN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Tipe transaksi = IN', () => pm.expect(res.type).to.eql('IN'));",
+                  "pm.test('ID transaksi IN tersimpan', () => pm.expect(res.id).to.be.a('string'));",
+                  "pm.collectionVariables.set('inMovementId', res.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"referenceNumber\": \"TRX-IN-{{$timestamp}}\",\n  \"type\": \"IN\",\n  \"movementDate\": \"{{today}}\",\n  \"warehouseId\": \"{{warehouseId}}\",\n  \"notes\": \"Pengadaan stok awal dari supplier\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/stock-movements"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Stock Movement OUT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Tipe transaksi = OUT', () => pm.expect(res.type).to.eql('OUT'));",
+                  "pm.collectionVariables.set('outMovementId', res.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"referenceNumber\": \"TRX-OUT-{{$timestamp}}\",\n  \"type\": \"OUT\",\n  \"movementDate\": \"{{today}}\",\n  \"warehouseId\": \"{{warehouseId}}\",\n  \"notes\": \"Pengiriman barang ke customer\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/stock-movements"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Stock Movements (filter ?type=IN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Semua hasil bertipe IN', () => pm.expect(res.every((m) => m.type === 'IN')).to.be.true);",
+                  "pm.test('Transaksi IN baru ikut tampil', () => pm.expect(res.some((m) => m.id === pm.collectionVariables.get('inMovementId'))).to.be.true);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/stock-movements?type=IN"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Stock Movements (filter ?type=OUT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Semua hasil bertipe OUT', () => pm.expect(res.every((m) => m.type === 'OUT')).to.be.true);",
+                  "pm.test('Transaksi OUT baru ikut tampil', () => pm.expect(res.some((m) => m.id === pm.collectionVariables.get('outMovementId'))).to.be.true);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/stock-movements?type=OUT"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Stock Movement By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('ID transaksi sama', () => pm.expect(res.id).to.eql(pm.collectionVariables.get('inMovementId')));",
+                  "pm.test('Memuat relasi warehouse & items', () => {",
+                  "  pm.expect(res.warehouse).to.be.an('object');",
+                  "  pm.expect(res.items).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/stock-movements/{{inMovementId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Stock Movement (notes)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Catatan berhasil diperbarui', () => pm.expect(res.notes).to.eql('Catatan transaksi diperbarui'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Catatan transaksi diperbarui\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/stock-movements/{{inMovementId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06 - Stock Movement Items & Kalkulasi Stok",
+      "item": [
+        {
+          "name": "Add Item to IN Movement (qty 50)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Kuantitas item = 50', () => pm.expect(Number(res.quantity)).to.eql(50));",
+                  "pm.test('productId sesuai', () => pm.expect(res.productId).to.eql(pm.collectionVariables.get('productId')));",
+                  "pm.collectionVariables.set('inItemId', res.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockMovementId\": \"{{inMovementId}}\",\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 50,\n  \"remarks\": \"Kondisi segel baik\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/stock-movement-items"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Stock After IN (currentStock = 50)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Stok otomatis bertambah menjadi 50', () => pm.expect(Number(res.currentStock)).to.eql(50));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/products/{{productId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Item to OUT Movement (qty 15)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Kuantitas item = 15', () => pm.expect(Number(res.quantity)).to.eql(15));",
+                  "pm.collectionVariables.set('outItemId', res.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockMovementId\": \"{{outMovementId}}\",\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 15,\n  \"remarks\": \"Barang keluar untuk customer\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/stock-movement-items"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product Stock Info (50 IN / 15 OUT / 35 stock)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('totalIn = 50', () => pm.expect(Number(res.totalIn)).to.eql(50));",
+                  "pm.test('totalOut = 15', () => pm.expect(Number(res.totalOut)).to.eql(15));",
+                  "pm.test('currentStock = 35', () => pm.expect(Number(res.currentStock)).to.eql(35));",
+                  "pm.test('calculatedStock = totalIn - totalOut = 35', () => pm.expect(Number(res.calculatedStock)).to.eql(35));",
+                  "pm.test('transactionHistory berisi 2 item', () => pm.expect(res.transactionHistory).to.have.lengthOf(2));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/products/{{productId}}/stock-info"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Stock Movement Items",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Response berupa array', () => pm.expect(res).to.be.an('array'));",
+                  "pm.test('Memuat relasi stockMovement & product', () => {",
+                  "  const item = res.find((i) => i.id === pm.collectionVariables.get('inItemId'));",
+                  "  pm.expect(item.stockMovement).to.be.an('object');",
+                  "  pm.expect(item.product).to.be.an('object');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/stock-movement-items"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Stock Movement Item By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('ID item sama', () => pm.expect(res.id).to.eql(pm.collectionVariables.get('inItemId')));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/stock-movement-items/{{inItemId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update IN Item qty 50 -> 60 (rollback stok)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Kuantitas berubah menjadi 60', () => pm.expect(Number(res.quantity)).to.eql(60));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 60,\n  \"remarks\": \"Kuantitas dikoreksi\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/stock-movement-items/{{inItemId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Stock After Item Update (60 IN / 15 OUT / 45 stock)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('totalIn = 60', () => pm.expect(Number(res.totalIn)).to.eql(60));",
+                  "pm.test('totalOut = 15', () => pm.expect(Number(res.totalOut)).to.eql(15));",
+                  "pm.test('currentStock = 45', () => pm.expect(Number(res.currentStock)).to.eql(45));",
+                  "pm.test('calculatedStock = 45', () => pm.expect(Number(res.calculatedStock)).to.eql(45));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/products/{{productId}}/stock-info"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "07 - Negative Cases (Validasi & Error Handling)",
+      "item": [
+        {
+          "name": "OUT Item Melebihi Stok -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('Pesan menyebut stok tidak mencukupi', () => pm.expect(JSON.stringify(res)).to.include('tidak mencukupi'));",
+                  "pm.test('Stok tidak berubah (tetap 45)', () => {",
+                  "  // validasi tambahan dilakukan di request berikutnya",
+                  "  pm.expect(true).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockMovementId\": \"{{outMovementId}}\",\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 100,\n  \"remarks\": \"Harusnya ditolak\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/stock-movement-items"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Stock Tidak Berubah Setelah Request Ditolak (45)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Stok tetap 45 setelah transaksi ditolak', () => pm.expect(Number(res.currentStock)).to.eql(45));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/products/{{productId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Duplicate Category Name -> 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{categoryName}}\",\n  \"description\": \"Duplikat\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/categories"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Product Tanpa Field Wajib -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('Ada detail validasi', () => pm.expect(res).to.have.property('message'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/products"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Warehouse capacity invalid (-5) -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"GDG-INVALID\",\n  \"name\": \"Gudang Invalid\",\n  \"location\": \"Tanpa lokasi valid\",\n  \"capacity\": -5\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/warehouses"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product Dengan UUID Tidak Valid -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 Bad Request (ParseUUIDPipe)', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/products/bukan-uuid"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Category ID Tidak Ditemukan -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/categories/00000000-0000-4000-8000-000000000000"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Item Dengan stockMovementId Palsu -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockMovementId\": \"00000000-0000-4000-8000-000000000000\",\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/stock-movement-items"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "08 - Cleanup (Rollback Stok & Hapus Data Uji)",
+      "item": [
+        {
+          "name": "Delete OUT Item (stok +15)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Ada pesan berhasil', () => pm.expect(res.message).to.include('berhasil dihapus'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/stock-movement-items/{{outItemId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete IN Item (stok -60 -> 0)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Ada pesan berhasil', () => pm.expect(res.message).to.include('berhasil dihapus'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/stock-movement-items/{{inItemId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Stock Rollback (currentStock = 0)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Stok kembali ke 0 setelah item dihapus', () => pm.expect(Number(res.currentStock)).to.eql(0));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/products/{{productId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete OUT Movement",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/stock-movements/{{outMovementId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete IN Movement",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/stock-movements/{{inMovementId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/products/{{productId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Deleted Product -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found (soft delete)', () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/products/{{productId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Warehouse",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/warehouses/{{warehouseId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Supplier",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/suppliers/{{supplierId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/categories/{{categoryId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Deleted Category -> 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found (soft delete)', () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/categories/{{categoryId}}"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Tanggal hari ini dalam format YYYY-MM-DD untuk field movementDate",
+          "if (!pm.collectionVariables.get('today')) {",
+          "  const d = new Date();",
+          "  const iso = d.toISOString().slice(0, 10);",
+          "  pm.collectionVariables.set('today', iso);",
+          "}",
+          "// Pastikan baseUrl tersedia walau tanpa environment",
+          "if (!pm.collectionVariables.get('baseUrl')) {",
+          "  pm.collectionVariables.set('baseUrl', 'http://localhost:3000');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000", "type": "string" },
+    { "key": "today", "value": "", "type": "string" },
+    { "key": "categoryId", "value": "", "type": "string" },
+    { "key": "categoryName", "value": "", "type": "string" },
+    { "key": "supplierId", "value": "", "type": "string" },
+    { "key": "warehouseId", "value": "", "type": "string" },
+    { "key": "productId", "value": "", "type": "string" },
+    { "key": "inMovementId", "value": "", "type": "string" },
+    { "key": "outMovementId", "value": "", "type": "string" },
+    { "key": "inItemId", "value": "", "type": "string" },
+    { "key": "outItemId", "value": "", "type": "string" }
+  ]
+}

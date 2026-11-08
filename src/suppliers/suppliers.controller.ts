@@ -1,4 +1,3 @@
-// src/suppliers/suppliers.controller.ts
 import {
   Controller,
   Get,

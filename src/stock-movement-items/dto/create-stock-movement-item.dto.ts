@@ -1,4 +1,3 @@
-// src/stock-movement-items/dto/create-stock-movement-item.dto.ts
 import {
   IsInt,
   IsNotEmpty,

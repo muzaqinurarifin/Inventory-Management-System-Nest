@@ -8,13 +8,14 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  type Relation,
 } from 'typeorm';
 import { Warehouse } from '../../warehouses/entities/warehouse.entity.js';
 import { StockMovementItem } from '../../stock-movement-items/entities/stock-movement-item.entity.js';
 
 export enum MovementType {
-  IN = 'IN', // Barang Masuk (Menambah Stok)
-  OUT = 'OUT', // Barang Keluar (Mengurangi Stok)
+  IN = 'IN', // barang masuk (menambah stok)
+  OUT = 'OUT', // barang keluar (mengurangi stok)
 }
 
 @Entity('stock_movements')
@@ -23,7 +24,7 @@ export class StockMovement {
   id: string;
 
   @Column({ unique: true, length: 50 })
-  referenceNumber: string; // Contoh: TRX-IN-2026001
+  referenceNumber: string; // contoh: trx-in-2026001
 
   @Column({
     type: 'enum',
@@ -44,12 +45,12 @@ export class StockMovement {
     onDelete: 'RESTRICT',
   })
   @JoinColumn({ name: 'warehouse_id' })
-  warehouse: Warehouse;
+  warehouse: Relation<Warehouse>;
 
   @OneToMany(() => StockMovementItem, (item) => item.stockMovement, {
     cascade: ['soft-remove'],
   })
-  items: StockMovementItem[];
+  items: Relation<StockMovementItem[]>;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -1,0 +1,50 @@
+Health Check ~ GET / (Health) ~ GET ~ 200 ~ 35 ~ Status 200 OK | Mengembalikan Hello World!
+Categories ~ Create Category ~ POST ~ 201 ~ 102 ~ Status 201 Created | ID kategori terbentuk (UUID) | Nama kategori sesuai | Deskripsi tersimpan
+Categories ~ Get All Categories ~ GET ~ 200 ~ 11 ~ Status 200 OK | Response berupa array | Kategori baru ada di daftar
+Categories ~ Get Category By ID ~ GET ~ 200 ~ 8 ~ Status 200 OK | ID sama dengan yang dibuat | Memuat relasi products
+Categories ~ Update Category ~ PATCH ~ 200 ~ 24 ~ Status 200 OK | Deskripsi berhasil diperbarui
+Suppliers ~ Create Supplier ~ POST ~ 201 ~ 16 ~ Status 201 Created | ID supplier terbentuk | Email tersimpan
+Suppliers ~ Get All Suppliers ~ GET ~ 200 ~ 8 ~ Status 200 OK | Response berupa array | Supplier baru ada di daftar
+Suppliers ~ Get Supplier By ID ~ GET ~ 200 ~ 10 ~ Status 200 OK | ID sama dengan yang dibuat
+Suppliers ~ Update Supplier ~ PATCH ~ 200 ~ 19 ~ Status 200 OK | Nomor telepon berhasil diperbarui
+Warehouses ~ Create Warehouse ~ POST ~ 201 ~ 11 ~ Status 201 Created | ID gudang terbentuk | Kapasitas tersimpan
+Warehouses ~ Get All Warehouses ~ GET ~ 200 ~ 4 ~ Status 200 OK | Response berupa array | Gudang baru ada di daftar
+Warehouses ~ Get Warehouse By ID ~ GET ~ 200 ~ 8 ~ Status 200 OK | ID sama dengan yang dibuat | Memuat relasi stockMovements
+Warehouses ~ Update Warehouse ~ PATCH ~ 200 ~ 15 ~ Status 200 OK | Lokasi berhasil diperbarui
+Products ~ Create Product ~ POST ~ 201 ~ 21 ~ Status 201 Created | ID produk terbentuk | Stok awal = 0 | Harga tersimpan | categoryId sesuai | supplierId sesuai
+Products ~ Get All Products ~ GET ~ 200 ~ 6 ~ Status 200 OK | Response berupa array | Produk baru ada di daftar | Relasi category & supplier ikut dimuat
+Products ~ Get Product By ID ~ GET ~ 200 ~ 7 ~ Status 200 OK | ID sama dengan yang dibuat | Stok masih 0 sebelum transaksi
+Products ~ Update Product ~ PATCH ~ 200 ~ 16 ~ Status 200 OK | Nama produk berhasil diperbarui | Harga berhasil diperbarui
+Stock Movements (IN / OUT) ~ Create Stock Movement IN ~ POST ~ 201 ~ 13 ~ Status 201 Created | Tipe transaksi = IN | ID transaksi IN tersimpan
+Stock Movements (IN / OUT) ~ Create Stock Movement OUT ~ POST ~ 201 ~ 17 ~ Status 201 Created | Tipe transaksi = OUT
+Stock Movements (IN / OUT) ~ Get Stock Movements (filter ?type=IN) ~ GET ~ 200 ~ 10 ~ Status 200 OK | Semua hasil bertipe IN | Transaksi IN baru ikut tampil
+Stock Movements (IN / OUT) ~ Get Stock Movements (filter ?type=OUT) ~ GET ~ 200 ~ 6 ~ Status 200 OK | Semua hasil bertipe OUT | Transaksi OUT baru ikut tampil
+Stock Movements (IN / OUT) ~ Get Stock Movement By ID ~ GET ~ 200 ~ 7 ~ Status 200 OK | ID transaksi sama | Memuat relasi warehouse & items
+Stock Movements (IN / OUT) ~ Update Stock Movement (notes) ~ PATCH ~ 200 ~ 15 ~ Status 200 OK | Catatan berhasil diperbarui
+Stock Movement Items & Kalkulasi Stok ~ Add Item to IN Movement (qty 50) ~ POST ~ 201 ~ 24 ~ Status 201 Created | Kuantitas item = 50 | productId sesuai
+Stock Movement Items & Kalkulasi Stok ~ Verify Stock After IN (currentStock = 50) ~ GET ~ 200 ~ 7 ~ Status 200 OK | Stok otomatis bertambah menjadi 50
+Stock Movement Items & Kalkulasi Stok ~ Add Item to OUT Movement (qty 15) ~ POST ~ 201 ~ 16 ~ Status 201 Created | Kuantitas item = 15
+Stock Movement Items & Kalkulasi Stok ~ Get Product Stock Info (50 IN / 15 OUT / 35 stock) ~ GET ~ 200 ~ 10 ~ Status 200 OK | totalIn = 50 | totalOut = 15 | currentStock = 35 | calculatedStock = totalIn - totalOut = 35 | transactionHistory berisi 2 item
+Stock Movement Items & Kalkulasi Stok ~ Get All Stock Movement Items ~ GET ~ 200 ~ 5 ~ Status 200 OK | Response berupa array | Memuat relasi stockMovement & product
+Stock Movement Items & Kalkulasi Stok ~ Get Stock Movement Item By ID ~ GET ~ 200 ~ 8 ~ Status 200 OK | ID item sama
+Stock Movement Items & Kalkulasi Stok ~ Update IN Item qty 50 -> 60 (rollback stok) ~ PATCH ~ 200 ~ 23 ~ Status 200 OK | Kuantitas berubah menjadi 60
+Stock Movement Items & Kalkulasi Stok ~ Verify Stock After Item Update (60 IN / 15 OUT / 45 stock) ~ GET ~ 200 ~ 11 ~ Status 200 OK | totalIn = 60 | totalOut = 15 | currentStock = 45 | calculatedStock = 45
+Negative Cases (Validasi & Error Handling) ~ OUT Item Melebihi Stok -> 400 ~ POST ~ 400 ~ 8 ~ Status 400 Bad Request | Pesan menyebut stok tidak mencukupi | Stok tidak berubah (tetap 45)
+Negative Cases (Validasi & Error Handling) ~ Verify Stock Tidak Berubah Setelah Request Ditolak (45) ~ GET ~ 200 ~ 7 ~ Status 200 OK | Stok tetap 45 setelah transaksi ditolak
+Negative Cases (Validasi & Error Handling) ~ Duplicate Category Name -> 409 ~ POST ~ 409 ~ 6 ~ Status 409 Conflict
+Negative Cases (Validasi & Error Handling) ~ Create Product Tanpa Field Wajib -> 400 ~ POST ~ 400 ~ 4 ~ Status 400 Bad Request | Ada detail validasi
+Negative Cases (Validasi & Error Handling) ~ Create Warehouse capacity invalid (-5) -> 400 ~ POST ~ 400 ~ 3 ~ Status 400 Bad Request
+Negative Cases (Validasi & Error Handling) ~ Get Product Dengan UUID Tidak Valid -> 400 ~ GET ~ 400 ~ 3 ~ Status 400 Bad Request (ParseUUIDPipe)
+Negative Cases (Validasi & Error Handling) ~ Get Category ID Tidak Ditemukan -> 404 ~ GET ~ 404 ~ 4 ~ Status 404 Not Found
+Negative Cases (Validasi & Error Handling) ~ Add Item Dengan stockMovementId Palsu -> 404 ~ POST ~ 404 ~ 4 ~ Status 404 Not Found
+Cleanup (Rollback Stok & Hapus Data Uji) ~ Delete OUT Item (stok +15) ~ DELETE ~ 200 ~ 19 ~ Status 200 OK | Ada pesan berhasil
+Cleanup (Rollback Stok & Hapus Data Uji) ~ Delete IN Item (stok -60 -> 0) ~ DELETE ~ 200 ~ 19 ~ Status 200 OK | Ada pesan berhasil
+Cleanup (Rollback Stok & Hapus Data Uji) ~ Verify Stock Rollback (currentStock = 0) ~ GET ~ 200 ~ 7 ~ Status 200 OK | Stok kembali ke 0 setelah item dihapus
+Cleanup (Rollback Stok & Hapus Data Uji) ~ Delete OUT Movement ~ DELETE ~ 200 ~ 16 ~ Status 200 OK
+Cleanup (Rollback Stok & Hapus Data Uji) ~ Delete IN Movement ~ DELETE ~ 200 ~ 14 ~ Status 200 OK
+Cleanup (Rollback Stok & Hapus Data Uji) ~ Delete Product ~ DELETE ~ 200 ~ 11 ~ Status 200 OK
+Cleanup (Rollback Stok & Hapus Data Uji) ~ Get Deleted Product -> 404 ~ GET ~ 404 ~ 5 ~ Status 404 Not Found (soft delete)
+Cleanup (Rollback Stok & Hapus Data Uji) ~ Delete Warehouse ~ DELETE ~ 200 ~ 16 ~ Status 200 OK
+Cleanup (Rollback Stok & Hapus Data Uji) ~ Delete Supplier ~ DELETE ~ 200 ~ 16 ~ Status 200 OK
+Cleanup (Rollback Stok & Hapus Data Uji) ~ Delete Category ~ DELETE ~ 200 ~ 13 ~ Status 200 OK
+Cleanup (Rollback Stok & Hapus Data Uji) ~ Get Deleted Category -> 404 ~ GET ~ 404 ~ 4 ~ Status 404 Not Found (soft delete)

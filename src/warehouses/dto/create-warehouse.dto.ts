@@ -1,4 +1,3 @@
-// src/warehouses/dto/create-warehouse.dto.ts
 import {
   IsInt,
   IsNotEmpty,

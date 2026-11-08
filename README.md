@@ -20,6 +20,33 @@ Proyek ini disusun untuk memenuhi Ujian Tengah Semester (UTS) mata kuliah **Fram
 
 ---
 
+## 🎁 Fitur Bonus (Tambahan)
+
+Di luar kebutuhan utama UTS, proyek ini menambahkan **dua fitur bonus** sebagai berikut:
+
+1. **Global Response Interceptor** — `src/interceptors/transform-response/transform-response.interceptor.ts`
+   * Membungkus seluruh response API ke dalam format standar yang konsisten:
+     ```json
+     {
+       "success": true,
+       "statusCode": 200,
+       "message": "Request berhasil",
+       "data": { }
+     }
+     ```
+   * Didaftarkan secara global melalui `app.useGlobalInterceptors(...)` di `src/main.ts`.
+
+2. **Logger Middleware** — `src/middlewares/simple-logger/simple-logger.middleware.ts`
+   * Mencatat setiap request yang masuk ke console, termasuk method dan URL:
+     ```text
+     Request Masuk method: GET, URL: /categories
+     ```
+   * Didaftarkan untuk semua route melalui `configure()` pada `AppModule` di `src/app.module.ts`.
+
+Kedua fitur ini bersifat **tambahan (bonus)** dan tidak mengubah aturan bisnis utama aplikasi.
+
+---
+
 ## 📂 Struktur Folder Proyek
 Aplikasi ini menerapkan arsitektur modular sesuai standar NestJS, di mana setiap entitas memiliki `Module`, `Controller`, `Service`, `DTO`, dan `Entity` masing-masing:
 
@@ -61,6 +88,12 @@ src/
 │   ├── stock-movement-items.controller.ts
 │   ├── stock-movement-items.module.ts
 │   └── stock-movement-items.service.ts
+├── interceptors/
+│   └── transform-response/
+│       └── transform-response.interceptor.ts
+├── middlewares/
+│   └── simple-logger/
+│       └── simple-logger.middleware.ts
 ├── app.module.ts
 └── main.ts
 ```
@@ -79,15 +112,16 @@ erDiagram
     PRODUCTS ||--o{ STOCK_MOVEMENT_ITEMS : "tercatat pada (1:N)"
 
     CATEGORIES {
-        int id PK
+        uuid id PK
         varchar name UK
         text description
         timestamp createdAt
         timestamp updatedAt
+        timestamp deletedAt
     }
 
     SUPPLIERS {
-        int id PK
+        uuid id PK
         varchar name
         varchar contactPerson
         varchar phone
@@ -95,50 +129,55 @@ erDiagram
         text address
         timestamp createdAt
         timestamp updatedAt
+        timestamp deletedAt
     }
 
     WAREHOUSES {
-        int id PK
+        uuid id PK
         varchar code UK
         varchar name
         text location
         int capacity
         timestamp createdAt
         timestamp updatedAt
+        timestamp deletedAt
     }
 
     PRODUCTS {
-        int id PK
+        uuid id PK
         varchar sku UK
         varchar name
         varchar unit
         decimal price
         int currentStock
-        int category_id FK
-        int supplier_id FK
+        uuid category_id FK
+        uuid supplier_id FK
         timestamp createdAt
         timestamp updatedAt
+        timestamp deletedAt
     }
 
     STOCK_MOVEMENTS {
-        int id PK
+        uuid id PK
         varchar referenceNumber UK
         enum type "IN | OUT"
         date movementDate
         text notes
-        int warehouse_id FK
+        uuid warehouse_id FK
         timestamp createdAt
         timestamp updatedAt
+        timestamp deletedAt
     }
 
     STOCK_MOVEMENT_ITEMS {
-        int id PK
-        int stock_movement_id FK
-        int product_id FK
+        uuid id PK
+        uuid stock_movement_id FK
+        uuid product_id FK
         int quantity
         text remarks
         timestamp createdAt
         timestamp updatedAt
+        timestamp deletedAt
     }
 ```
 
@@ -163,7 +202,9 @@ erDiagram
    * Apabila mencukupi, stok produk otomatis dikurangi:
      $$\text{currentStock} = \text{currentStock} - \text{quantity}$$
 4. **Perubahan & Penghapusan Item Transaksi (`PATCH` & `DELETE`):**
-   * Jika kuantitas item diubah atau dihapus, sistem melakukan *rollback* perhitungan terhadap `currentStock` produk terkait agar nilai stok selalu sinkron dengan riwayat transaksi.
+   * Jika kuantitas item diubah atau item dihapus, sistem menyesuaikan `currentStock` produk terkait. Penghapusan item menggunakan *soft delete*.
+5. **Soft Delete:**
+   * Operasi `DELETE` mengisi `deletedAt` tanpa menghapus baris secara permanen. Query TypeORM biasa tidak menyertakan data yang sudah dihapus.
 
 ---
 
@@ -182,14 +223,15 @@ npm install
 ```
 
 ### 3. Konfigurasi Environment (`.env`)
-Buat file bernama **`.env`** di direktori utama (*root folder* sejajar dengan `package.json`), lalu isi dengan konfigurasi berikut:
+Buat file bernama **`.env`** di direktori utama (*root folder* sejajar dengan `package.json`). Jangan commit file ini karena berisi konfigurasi lokal dan kredensial database. Contoh:
 
 ```env
 PORT=3000
+NODE_ENV=development
 DB_HOST=localhost
 DB_PORT=5432
 DB_USERNAME=postgres
-DB_PASSWORD=mnurar245
+DB_PASSWORD=ganti_dengan_password_lokal
 DB_DATABASE=apifirstnestjs
 ```
 
@@ -205,12 +247,20 @@ Jalankan server dalam mode *development (watch mode)*:
 npm run start:dev
 ```
 Aplikasi akan berjalan di **`http://localhost:3000`**. Tabel-tabel database akan otomatis dibuat oleh TypeORM (`synchronize: true`).
+Untuk penggunaan lokal, nilai `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE`, dan `DB_PORT` harus cocok dengan konfigurasi Docker Compose. `DB_HOST=localhost` digunakan karena aplikasi dijalankan langsung di host, bukan di dalam container.
+
+### 6. Mengimpor Koleksi Postman
+Di Postman, impor koleksi **`postman/Inventory-Management-API.postman_collection.json`** dan environment **`postman/Inventory-Local.postman_environment.json`**, lalu pilih environment **Inventory Local**. Environment menggunakan `baseUrl` untuk alamat API lokal. Jalankan request sesuai urutan; setelah membuat data, salin UUID dari response ke variabel koleksi terkait (`categoryId`, `supplierId`, `warehouseId`, `productId`, dan seterusnya) sebelum menjalankan request yang membutuhkannya.
 
 ---
 
 ## 📡 API Specification
 
 Base URL: `http://localhost:3000`
+
+Semua primary key dan foreign key menggunakan UUID. Gunakan ID yang dikembalikan oleh API untuk mengisi parameter `:id` dan field relasi seperti `categoryId`, `supplierId`, `warehouseId`, `stockMovementId`, serta `productId`. Contoh UUID di bawah hanya placeholder.
+
+Semua endpoint `DELETE` melakukan *soft delete*: data ditandai melalui `deletedAt`, bukan dihapus permanen. Data terhapus tidak muncul pada query biasa; API saat ini belum menyediakan endpoint untuk memulihkannya.
 
 ### 1. Modul Categories (`/categories`)
 | Method | Endpoint | Deskripsi | Status Code |
@@ -219,7 +269,7 @@ Base URL: `http://localhost:3000`
 | `GET` | `/categories` | Menampilkan seluruh kategori beserta daftar produknya | `200 OK` |
 | `GET` | `/categories/:id` | Menampilkan detail satu kategori berdasarkan ID | `200 OK`, `404 Not Found` |
 | `PATCH` | `/categories/:id` | Memperbarui data kategori | `200 OK`, `404 Not Found` |
-| `DELETE` | `/categories/:id` | Menghapus data kategori | `200 OK`, `404 Not Found` |
+| `DELETE` | `/categories/:id` | Melakukan *soft delete* kategori | `200 OK`, `404 Not Found` |
 
 **Contoh Request Body (`POST /categories`):**
 ```json
@@ -238,7 +288,7 @@ Base URL: `http://localhost:3000`
 | `GET` | `/suppliers` | Menampilkan seluruh daftar pemasok | `200 OK` |
 | `GET` | `/suppliers/:id` | Menampilkan detail pemasok berdasarkan ID | `200 OK`, `404 Not Found` |
 | `PATCH` | `/suppliers/:id` | Memperbarui informasi pemasok | `200 OK`, `404 Not Found` |
-| `DELETE` | `/suppliers/:id` | Menghapus data pemasok | `200 OK`, `404 Not Found` |
+| `DELETE` | `/suppliers/:id` | Melakukan *soft delete* pemasok | `200 OK`, `404 Not Found` |
 
 **Contoh Request Body (`POST /suppliers`):**
 ```json
@@ -260,7 +310,7 @@ Base URL: `http://localhost:3000`
 | `GET` | `/warehouses` | Menampilkan daftar seluruh gudang | `200 OK` |
 | `GET` | `/warehouses/:id` | Menampilkan detail gudang beserta riwayat transaksinya | `200 OK`, `404 Not Found` |
 | `PATCH` | `/warehouses/:id` | Memperbarui data gudang | `200 OK`, `404 Not Found` |
-| `DELETE` | `/warehouses/:id` | Menghapus data gudang | `200 OK`, `404 Not Found` |
+| `DELETE` | `/warehouses/:id` | Melakukan *soft delete* gudang | `200 OK`, `404 Not Found` |
 
 **Contoh Request Body (`POST /warehouses`):**
 ```json
@@ -282,7 +332,7 @@ Base URL: `http://localhost:3000`
 | `GET` | `/products/:id` | Menampilkan detail produk berdasarkan ID | `200 OK`, `404 Not Found` |
 | `GET` | `/products/:id/stock-info` | **Fitur Khusus:** Menampilkan rekap stok (`totalIn`, `totalOut`, `currentStock`) & histori transaksi produk | `200 OK`, `404 Not Found` |
 | `PATCH` | `/products/:id` | Memperbarui informasi produk | `200 OK`, `404 Not Found` |
-| `DELETE` | `/products/:id` | Menghapus produk | `200 OK`, `404 Not Found` |
+| `DELETE` | `/products/:id` | Melakukan *soft delete* produk | `200 OK`, `404 Not Found` |
 
 **Contoh Request Body (`POST /products`):**
 ```json
@@ -305,7 +355,7 @@ Base URL: `http://localhost:3000`
 | `GET` | `/stock-movements` | Menampilkan semua transaksi (mendukung filter `?type=IN` atau `?type=OUT`) | `200 OK` |
 | `GET` | `/stock-movements/:id` | Menampilkan detail transaksi beserta rincian item barangnya | `200 OK`, `404 Not Found` |
 | `PATCH` | `/stock-movements/:id` | Memperbarui informasi dokumen transaksi | `200 OK`, `404 Not Found` |
-| `DELETE` | `/stock-movements/:id` | Menghapus dokumen transaksi stok | `200 OK`, `404 Not Found` |
+| `DELETE` | `/stock-movements/:id` | Melakukan *soft delete* dokumen transaksi stok dan item terkait | `200 OK`, `404 Not Found` |
 
 **Contoh Request Body (`POST /stock-movements`):**
 ```json
@@ -327,7 +377,7 @@ Base URL: `http://localhost:3000`
 | `GET` | `/stock-movement-items` | Menampilkan seluruh item detail transaksi | `200 OK` |
 | `GET` | `/stock-movement-items/:id` | Menampilkan detail satu item transaksi | `200 OK`, `404 Not Found` |
 | `PATCH` | `/stock-movement-items/:id` | Mengubah kuantitas/catatan item & menghitung ulang stok produk | `200 OK`, `400 Bad Request` |
-| `DELETE` | `/stock-movement-items/:id` | Menghapus item dari transaksi & mengembalikan (*rollback*) stok produk | `200 OK`, `400 Bad Request` |
+| `DELETE` | `/stock-movement-items/:id` | Melakukan *soft delete* item & mengembalikan (*rollback*) stok produk | `200 OK`, `400 Bad Request` |
 
 **Contoh Request Body (`POST /stock-movement-items`):**
 ```json
