@@ -34,7 +34,7 @@ Di luar kebutuhan utama UTS, proyek ini menambahkan **dua fitur bonus** sebagai 
        "data": { }
      }
      ```
-   * Didaftarkan secara global melalui `app.useGlobalInterceptors(...)` di `src/main.ts`.
+   * Didaftarkan secara global melalui `app.useGlobalInterceptors(...)` di `src/main.ts`
 
 2. **Logger Middleware** — `src/middlewares/simple-logger/simple-logger.middleware.ts`
    * Mencatat setiap request yang masuk ke console, termasuk method dan URL:
@@ -43,7 +43,7 @@ Di luar kebutuhan utama UTS, proyek ini menambahkan **dua fitur bonus** sebagai 
      ```
    * Didaftarkan untuk semua route melalui `configure()` pada `AppModule` di `src/app.module.ts`.
 
-Kedua fitur ini bersifat **tambahan (bonus)** dan tidak mengubah aturan bisnis utama aplikasi.
+Kedua fitur ini bersifat **tambahan (bonus)** dan tidak mengubah aturan bisnis utama aplikasi
 
 ---
 
