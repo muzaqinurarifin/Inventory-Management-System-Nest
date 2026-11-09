@@ -415,7 +415,7 @@ Semua endpoint `DELETE` melakukan *soft delete*: data ditandai melalui `deletedA
 ## 🧪 Urutan Skenario Pengujian Endpoint
 
 Untuk mendemonstrasikan aplikasi secara menyeluruh, jalankan *request* berikut secara berurutan melalui Postman atau REST client lain. Koleksi Postman siap import tersedia di [`docs/postman/Inventory-Management-Complete.postman_collection.json`](docs/postman/Inventory-Management-Complete.postman_collection.json), dan dokumentasi lengkap seluruh endpoint ada di [`docs/API-DOCUMENTATION.md`](docs/API-DOCUMENTATION.md).
-1. **`POST /categories`** — Buat data kategori terlebih dahulu.
+1. **`POST /categories`** — Buat data kategori dahulu.
 2. **`POST /suppliers`** — Buat data pemasok barang.
 3. **`POST /warehouses`** — Buat data gudang penyimpanan.
 4. **`POST /products`** — Buat produk baru dengan menghubungkan `categoryId` dan `supplierId`.
