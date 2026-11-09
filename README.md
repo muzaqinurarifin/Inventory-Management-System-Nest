@@ -16,7 +16,7 @@ Proyek ini disusun untuk memenuhi Ujian Tengah Semester (UTS) mata kuliah **Fram
 * **ORM:** TypeORM
 * **Validasi Input & DTO:** `class-validator`, `class-transformer`, `@nestjs/mapped-types`
 * **Validasi Environment:** `@nestjs/config` & `joi`
-* **API Testing:** Postman
+* **API Testing:** Postman / REST client lain (koleksi Postman tersedia di [`docs/postman`](docs/postman))
 
 ---
 
@@ -88,6 +88,9 @@ src/
 │   ├── stock-movement-items.controller.ts
 │   ├── stock-movement-items.module.ts
 │   └── stock-movement-items.service.ts
+├── common/
+│   ├── assign-defined.ts       # partial update aman (hanya field yang dikirim)
+│   └── stock-calculator.ts     # hitung & sinkronisasi stok dari histori transaksi
 ├── interceptors/
 │   └── transform-response/
 │       └── transform-response.interceptor.ts
@@ -192,19 +195,40 @@ erDiagram
 
 ## ⚙️ Aturan Bisnis & Mekanisme Perhitungan Stok
 
+Stok produk (`currentStock`) tidak lagi ditambah/dikurangi secara manual. Nilai stok selalu **dihitung ulang dari histori transaksi** yang masih aktif melalui helper `src/common/stock-calculator.ts`:
+
+* `calculateProductStock()` menjumlahkan seluruh item pada transaksi `IN` lalu mengurangkan seluruh item pada transaksi `OUT`.
+* `syncProductStock()` menyimpan hasil perhitungan ke `products.currentStock`. Jika hasilnya negatif, seluruh transaksi database dibatalkan (*rollback*) dan API mengembalikan **`400 Bad Request`**.
+
+Dengan pendekatan ini, `currentStock` selalu konsisten dengan histori transaksi, termasuk ketika item diubah, dipindahkan, atau dihapus.
+
 1. **Inisialisasi Stok Awal:** Setiap produk baru yang didaftarkan melalui `POST /products` memiliki nilai stok awal (`currentStock = 0`).
 2. **Transaksi Barang Masuk (`IN`):**
-   * Saat item ditambahkan ke dalam transaksi bertipe `IN`, stok produk otomatis bertambah:
-     $$\text{currentStock} = \text{currentStock} + \text{quantity}$$
+   * Saat item ditambahkan ke transaksi bertipe `IN`, stok produk dihitung ulang dan bertambah sesuai kuantitas item.
 3. **Transaksi Barang Keluar (`OUT`):**
-   * Sistem memvalidasi ketersediaan stok sebelum menyimpan item transaksi `OUT`.
-   * Apabila $\text{currentStock} < \text{quantity}$, sistem menolak transaksi dengan status **`400 Bad Request`** agar stok tidak bernilai negatif.
-   * Apabila mencukupi, stok produk otomatis dikurangi:
-     $$\text{currentStock} = \text{currentStock} - \text{quantity}$$
-4. **Perubahan & Penghapusan Item Transaksi (`PATCH` & `DELETE`):**
-   * Jika kuantitas item diubah atau item dihapus, sistem menyesuaikan `currentStock` produk terkait. Penghapusan item menggunakan *soft delete*.
-5. **Soft Delete:**
+   * Ketersediaan stok divalidasi dari **histori transaksi**, bukan hanya angka `currentStock` yang tersimpan.
+   * Apabila stok tersedia < `quantity`, sistem menolak transaksi dengan **`400 Bad Request`** agar stok tidak bernilai negatif.
+4. **Perubahan Item Transaksi (`PATCH /stock-movement-items/:id`):**
+   * Item dapat diubah kuantitas/catatannya, dipindahkan ke dokumen transaksi lain (`stockMovementId`), atau dipindahkan ke produk lain (`productId`).
+   * Stok produk lama dan produk baru (jika berpindah) dihitung ulang. Jika perubahan membuat stok negatif, perubahan ditolak **`400 Bad Request`**.
+5. **Penghapusan Item Transaksi (`DELETE /stock-movement-items/:id`):**
+   * Item di-*soft delete*, lalu stok produk terkait dihitung ulang. Penghapusan ditolak `400` jika stok dari barang masuk sudah terpakai pada transaksi keluar.
+6. **Perubahan Tipe Transaksi (`PATCH /stock-movements/:id`):**
+   * Mengubah tipe `IN` ↔ `OUT` akan membalik arah seluruh item pada transaksi tersebut.
+   * Stok semua produk terkait dihitung ulang. Jika ada produk yang stoknya menjadi negatif, perubahan ditolak **`400 Bad Request`**.
+7. **Penghapusan Dokumen Transaksi (`DELETE /stock-movements/:id`):**
+   * Dokumen transaksi beserta seluruh item-nya di-*soft delete*, lalu stok semua produk terkait dihitung ulang.
+   * Penghapusan ditolak `400` apabila stok dari transaksi masuk sudah terpakai oleh transaksi keluar.
+8. **Soft Delete:**
    * Operasi `DELETE` mengisi `deletedAt` tanpa menghapus baris secara permanen. Query TypeORM biasa tidak menyertakan data yang sudah dihapus.
+9. **Validasi Filter Transaksi:**
+   * Query `?type=` pada `GET /stock-movements` divalidasi dengan DTO. Nilai selain `IN` atau `OUT` menghasilkan **`400 Bad Request`**.
+10. **Tipe Data Harga:**
+    * Kolom `price` menggunakan *transformer* sehingga PostgreSQL `decimal` selalu dikembalikan sebagai `number` pada response API, bukan string.
+11. **Partial Update Aman:**
+    * Helper `assignDefined()` hanya menyalin field yang benar-benar dikirim pada `PATCH`, sehingga properti yang tidak disertakan tidak menimpa nilai entity menjadi `undefined`.
+12. **Validasi Uniqueness saat Update:**
+    * `PATCH` pada kategori (`name`), pemasok (`email`), dan gudang (`code`) mengecek duplikasi dan mengembalikan **`409 Conflict`** jika nilai sudah dipakai data lain.
 
 ---
 
@@ -265,7 +289,7 @@ Semua endpoint `DELETE` melakukan *soft delete*: data ditandai melalui `deletedA
 | `POST` | `/categories` | Membuat kategori produk baru | `201 Created`, `409 Conflict` |
 | `GET` | `/categories` | Menampilkan seluruh kategori beserta daftar produknya | `200 OK` |
 | `GET` | `/categories/:id` | Menampilkan detail satu kategori berdasarkan ID | `200 OK`, `404 Not Found` |
-| `PATCH` | `/categories/:id` | Memperbarui data kategori | `200 OK`, `404 Not Found` |
+| `PATCH` | `/categories/:id` | Memperbarui data kategori (nama duplikat ditolak) | `200 OK`, `404 Not Found`, `409 Conflict` |
 | `DELETE` | `/categories/:id` | Melakukan *soft delete* kategori | `200 OK`, `404 Not Found` |
 
 **Contoh Request Body (`POST /categories`):**
@@ -284,7 +308,7 @@ Semua endpoint `DELETE` melakukan *soft delete*: data ditandai melalui `deletedA
 | `POST` | `/suppliers` | Mendaftarkan pemasok baru | `201 Created`, `409 Conflict` |
 | `GET` | `/suppliers` | Menampilkan seluruh daftar pemasok | `200 OK` |
 | `GET` | `/suppliers/:id` | Menampilkan detail pemasok berdasarkan ID | `200 OK`, `404 Not Found` |
-| `PATCH` | `/suppliers/:id` | Memperbarui informasi pemasok | `200 OK`, `404 Not Found` |
+| `PATCH` | `/suppliers/:id` | Memperbarui informasi pemasok (email duplikat ditolak) | `200 OK`, `404 Not Found`, `409 Conflict` |
 | `DELETE` | `/suppliers/:id` | Melakukan *soft delete* pemasok | `200 OK`, `404 Not Found` |
 
 **Contoh Request Body (`POST /suppliers`):**
@@ -306,7 +330,7 @@ Semua endpoint `DELETE` melakukan *soft delete*: data ditandai melalui `deletedA
 | `POST` | `/warehouses` | Membuat data gudang penyimpanan baru | `201 Created`, `409 Conflict` |
 | `GET` | `/warehouses` | Menampilkan daftar seluruh gudang | `200 OK` |
 | `GET` | `/warehouses/:id` | Menampilkan detail gudang beserta riwayat transaksinya | `200 OK`, `404 Not Found` |
-| `PATCH` | `/warehouses/:id` | Memperbarui data gudang | `200 OK`, `404 Not Found` |
+| `PATCH` | `/warehouses/:id` | Memperbarui data gudang (kode duplikat ditolak) | `200 OK`, `404 Not Found`, `409 Conflict` |
 | `DELETE` | `/warehouses/:id` | Melakukan *soft delete* gudang | `200 OK`, `404 Not Found` |
 
 **Contoh Request Body (`POST /warehouses`):**
@@ -327,8 +351,8 @@ Semua endpoint `DELETE` melakukan *soft delete*: data ditandai melalui `deletedA
 | `POST` | `/products` | Menambahkan produk baru (stok awal = 0) | `201 Created`, `404 Not Found`, `409 Conflict` |
 | `GET` | `/products` | Menampilkan seluruh produk beserta kategori & pemasok | `200 OK` |
 | `GET` | `/products/:id` | Menampilkan detail produk berdasarkan ID | `200 OK`, `404 Not Found` |
-| `GET` | `/products/:id/stock-info` | **Fitur Khusus:** Menampilkan rekap stok (`totalIn`, `totalOut`, `currentStock`) & histori transaksi produk | `200 OK`, `404 Not Found` |
-| `PATCH` | `/products/:id` | Memperbarui informasi produk | `200 OK`, `404 Not Found` |
+| `GET` | `/products/:id/stock-info` | **Fitur Khusus:** Menampilkan rekap stok (`totalIn`, `totalOut`, `currentStock`, `calculatedStock`) & histori transaksi produk | `200 OK`, `404 Not Found` |
+| `PATCH` | `/products/:id` | Memperbarui informasi produk (SKU duplikat ditolak) | `200 OK`, `404 Not Found`, `409 Conflict` |
 | `DELETE` | `/products/:id` | Melakukan *soft delete* produk | `200 OK`, `404 Not Found` |
 
 **Contoh Request Body (`POST /products`):**
@@ -348,11 +372,11 @@ Semua endpoint `DELETE` melakukan *soft delete*: data ditandai melalui `deletedA
 ### 5. Modul Stock Movements (`/stock-movements`)
 | Method | Endpoint | Deskripsi | Status Code |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/stock-movements` | Membuat dokumen transaksi pergerakan stok (`IN` / `OUT`) | `201 Created`, `409 Conflict` |
-| `GET` | `/stock-movements` | Menampilkan semua transaksi (mendukung filter `?type=IN` atau `?type=OUT`) | `200 OK` |
+| `POST` | `/stock-movements` | Membuat dokumen transaksi pergerakan stok (`IN` / `OUT`) | `201 Created`, `404 Not Found`, `409 Conflict` |
+| `GET` | `/stock-movements` | Menampilkan semua transaksi (filter `?type=IN` / `?type=OUT`, nilai lain ditolak) | `200 OK`, `400 Bad Request` |
 | `GET` | `/stock-movements/:id` | Menampilkan detail transaksi beserta rincian item barangnya | `200 OK`, `404 Not Found` |
-| `PATCH` | `/stock-movements/:id` | Memperbarui informasi dokumen transaksi | `200 OK`, `404 Not Found` |
-| `DELETE` | `/stock-movements/:id` | Melakukan *soft delete* dokumen transaksi stok dan item terkait | `200 OK`, `404 Not Found` |
+| `PATCH` | `/stock-movements/:id` | Memperbarui dokumen transaksi; perubahan tipe `IN` ↔ `OUT` menghitung ulang stok produk | `200 OK`, `400 Bad Request`, `404 Not Found`, `409 Conflict` |
+| `DELETE` | `/stock-movements/:id` | *Soft delete* dokumen beserta item terkait lalu menghitung ulang stok produk | `200 OK`, `400 Bad Request`, `404 Not Found` |
 
 **Contoh Request Body (`POST /stock-movements`):**
 ```json
@@ -370,11 +394,11 @@ Semua endpoint `DELETE` melakukan *soft delete*: data ditandai melalui `deletedA
 ### 6. Modul Stock Movement Items (`/stock-movement-items`)
 | Method | Endpoint | Deskripsi | Status Code |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/stock-movement-items` | Menambahkan item produk ke transaksi & memperbarui stok produk otomatis | `201 Created`, `400 Bad Request` |
+| `POST` | `/stock-movement-items` | Menambahkan item produk ke transaksi & menghitung ulang stok produk | `201 Created`, `400 Bad Request`, `404 Not Found` |
 | `GET` | `/stock-movement-items` | Menampilkan seluruh item detail transaksi | `200 OK` |
 | `GET` | `/stock-movement-items/:id` | Menampilkan detail satu item transaksi | `200 OK`, `404 Not Found` |
-| `PATCH` | `/stock-movement-items/:id` | Mengubah kuantitas/catatan item & menghitung ulang stok produk | `200 OK`, `400 Bad Request` |
-| `DELETE` | `/stock-movement-items/:id` | Melakukan *soft delete* item & mengembalikan (*rollback*) stok produk | `200 OK`, `400 Bad Request` |
+| `PATCH` | `/stock-movement-items/:id` | Mengubah kuantitas/catatan, memindahkan item ke transaksi/produk lain, lalu menghitung ulang stok | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| `DELETE` | `/stock-movement-items/:id` | *Soft delete* item & menghitung ulang (*rollback*) stok produk | `200 OK`, `400 Bad Request`, `404 Not Found` |
 
 **Contoh Request Body (`POST /stock-movement-items`):**
 ```json
@@ -390,7 +414,7 @@ Semua endpoint `DELETE` melakukan *soft delete*: data ditandai melalui `deletedA
 
 ## 🧪 Urutan Skenario Pengujian Endpoint
 
-Untuk mendemonstrasikan aplikasi secara menyeluruh, jalankan *request* pada Postman dengan urutan berikut:
+Untuk mendemonstrasikan aplikasi secara menyeluruh, jalankan *request* berikut secara berurutan melalui Postman atau REST client lain. Koleksi Postman siap import tersedia di [`docs/postman/Inventory-Management-Complete.postman_collection.json`](docs/postman/Inventory-Management-Complete.postman_collection.json), dan dokumentasi lengkap seluruh endpoint ada di [`docs/API-DOCUMENTATION.md`](docs/API-DOCUMENTATION.md).
 1. **`POST /categories`** — Buat data kategori terlebih dahulu.
 2. **`POST /suppliers`** — Buat data pemasok barang.
 3. **`POST /warehouses`** — Buat data gudang penyimpanan.
@@ -399,5 +423,7 @@ Untuk mendemonstrasikan aplikasi secara menyeluruh, jalankan *request* pada Post
 6. **`POST /stock-movement-items`** — Masukkan produk beserta kuantitas barang masuk (misal: `50`).
 7. **`POST /stock-movements`** — Buat transaksi keluar dengan `"type": "OUT"`.
 8. **`POST /stock-movement-items`** — Masukkan produk beserta kuantitas barang keluar (misal: `15`).
-9. **`GET /products/:id/stock-info`** — Ganti `:id` dengan UUID produk, lalu periksa hasil perhitungan stok (`totalIn: 50`, `totalOut: 15`, `currentStock: 35`).
-10. **Uji Validasi Error (`400 Bad Request`):** Coba kirim `POST /stock-movement-items` pada transaksi `OUT` dengan `quantity: 100` (melebihi sisa stok `35`) untuk membuktikan sistem menolak stok minus.
+9. **`GET /products/:id/stock-info`** — Ganti `:id` dengan UUID produk, lalu periksa hasil perhitungan stok (`totalIn: 50`, `totalOut: 15`, `currentStock: 35`, `calculatedStock: 35`). `currentStock` dan `calculatedStock` seharusnya selalu sama karena stok dihitung ulang dari histori transaksi.
+10. **Uji Validasi Stok (`400 Bad Request`):** Coba kirim `POST /stock-movement-items` pada transaksi `OUT` dengan `quantity: 100` (melebihi sisa stok `35`) untuk membuktikan sistem menolak stok minus.
+11. **Uji Validasi Filter (`400 Bad Request`):** Akses `GET /stock-movements?type=SALAH` untuk membuktikan filter tipe divalidasi dan hanya menerima `IN` atau `OUT`.
+12. **Uji Perubahan Tipe Transaksi:** Ubah transaksi `IN` menjadi `OUT` melalui `PATCH /stock-movements/:id`. Stok produk terkait akan dihitung ulang; jika stok menjadi negatif, API menolak dengan `400 Bad Request`.
