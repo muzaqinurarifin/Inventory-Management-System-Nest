@@ -12,7 +12,7 @@ import {
 import { StockMovementsService } from './stock-movements.service.js';
 import { CreateStockMovementDto } from './dto/create-stock-movement.dto.js';
 import { UpdateStockMovementDto } from './dto/update-stock-movement.dto.js';
-import { MovementType } from './entities/stock-movement.entity.js';
+import { FindStockMovementsQueryDto } from './dto/find-stock-movements-query.dto.js';
 
 @Controller('stock-movements')
 export class StockMovementsController {
@@ -24,8 +24,8 @@ export class StockMovementsController {
   }
 
   @Get()
-  findAll(@Query('type') type?: MovementType) {
-    return this.stockMovementsService.findAll(type);
+  findAll(@Query() query: FindStockMovementsQueryDto) {
+    return this.stockMovementsService.findAll(query.type);
   }
 
   @Get(':id')

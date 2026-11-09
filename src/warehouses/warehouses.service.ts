@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { Warehouse } from './entities/warehouse.entity.js';
 import { CreateWarehouseDto } from './dto/create-warehouse.dto.js';
 import { UpdateWarehouseDto } from './dto/update-warehouse.dto.js';
+import { assignDefined } from '../common/assign-defined.js';
 
 @Injectable()
 export class WarehousesService {
@@ -44,7 +45,15 @@ export class WarehousesService {
 
   async update(id: string, dto: UpdateWarehouseDto) {
     const warehouse = await this.findOne(id);
-    Object.assign(warehouse, dto);
+    if (dto.code && dto.code !== warehouse.code) {
+      const exists = await this.warehouseRepo.findOne({
+        where: { code: dto.code },
+      });
+      if (exists) {
+        throw new ConflictException(`Kode gudang ${dto.code} sudah digunakan`);
+      }
+    }
+    assignDefined(warehouse, dto);
     return this.warehouseRepo.save(warehouse);
   }
 

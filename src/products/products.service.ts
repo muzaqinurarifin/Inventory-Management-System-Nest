@@ -11,6 +11,7 @@ import { UpdateProductDto } from './dto/update-product.dto.js';
 import { CategoriesService } from '../categories/categories.service.js';
 import { SuppliersService } from '../suppliers/suppliers.service.js';
 import { MovementType } from '../stock-movements/entities/stock-movement.entity.js';
+import { assignDefined } from '../common/assign-defined.js';
 
 @Injectable()
 export class ProductsService {
@@ -107,10 +108,20 @@ export class ProductsService {
 
   async update(id: string, dto: UpdateProductDto) {
     const product = await this.findOne(id);
+    if (dto.sku && dto.sku !== product.sku) {
+      const exists = await this.productRepo.findOne({
+        where: { sku: dto.sku },
+      });
+      if (exists) {
+        throw new ConflictException(
+          `Produk dengan SKU ${dto.sku} sudah terdaftar`,
+        );
+      }
+    }
     if (dto.categoryId) await this.categoriesService.findOne(dto.categoryId);
     if (dto.supplierId) await this.suppliersService.findOne(dto.supplierId);
 
-    Object.assign(product, dto);
+    assignDefined(product, dto);
     return this.productRepo.save(product);
   }
 

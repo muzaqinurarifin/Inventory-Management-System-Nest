@@ -28,7 +28,18 @@ export class Product {
   @Column({ length: 30, default: 'pcs' })
   unit: string; // satuan: pcs, box, unit, kg
 
-  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    default: 0,
+    // PostgreSQL mengembalikan kolom decimal sebagai string,
+    // transformer ini memastikan API selalu mengembalikan number.
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string | null) => (value === null ? null : Number(value)),
+    },
+  })
   price: number;
 
   @Column({ type: 'int', default: 0 })

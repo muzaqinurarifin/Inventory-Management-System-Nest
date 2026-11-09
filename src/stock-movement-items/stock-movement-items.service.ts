@@ -13,6 +13,14 @@ import {
   StockMovement,
   MovementType,
 } from '../stock-movements/entities/stock-movement.entity.js';
+import {
+  calculateProductStock,
+  syncProductStock,
+} from '../common/stock-calculator.js';
+import { assignDefined } from '../common/assign-defined.js';
+
+const STOCK_NOT_ENOUGH_MESSAGE =
+  'Stok produk tidak mencukupi untuk pembaruan item transaksi';
 
 @Injectable()
 export class StockMovementItemsService {
@@ -26,38 +34,50 @@ export class StockMovementItemsService {
   ) {}
 
   async create(dto: CreateStockMovementItemDto) {
-    const movement = await this.movementRepo.findOne({
-      where: { id: dto.stockMovementId },
-    });
-    if (!movement) {
-      throw new NotFoundException(
-        `Transaksi stok ID ${dto.stockMovementId} tidak ditemukan`,
-      );
-    }
+    return this.itemRepo.manager.transaction(async (manager) => {
+      const itemRepo = manager.getRepository(StockMovementItem);
+      const movementRepo = manager.getRepository(StockMovement);
+      const productRepo = manager.getRepository(Product);
 
-    const product = await this.productRepo.findOne({
-      where: { id: dto.productId },
-    });
-    if (!product) {
-      throw new NotFoundException(`Produk ID ${dto.productId} tidak ditemukan`);
-    }
-
-    // hitung stok berdasarkan jenis transaksi
-    if (movement.type === MovementType.IN) {
-      product.currentStock += dto.quantity;
-    } else if (movement.type === MovementType.OUT) {
-      if (product.currentStock < dto.quantity) {
-        throw new BadRequestException(
-          `Stok produk "${product.name}" tidak mencukupi. Stok tersedia: ${product.currentStock}, diminta: ${dto.quantity}`,
+      const movement = await movementRepo.findOne({
+        where: { id: dto.stockMovementId },
+      });
+      if (!movement) {
+        throw new NotFoundException(
+          `Transaksi stok ID ${dto.stockMovementId} tidak ditemukan`,
         );
       }
-      product.currentStock -= dto.quantity;
-    }
 
-    await this.productRepo.save(product);
+      const product = await productRepo.findOne({
+        where: { id: dto.productId },
+      });
+      if (!product) {
+        throw new NotFoundException(
+          `Produk ID ${dto.productId} tidak ditemukan`,
+        );
+      }
 
-    const item = this.itemRepo.create(dto);
-    return this.itemRepo.save(item);
+      // validasi stok berdasarkan histori transaksi, bukan angka tersimpan
+      if (movement.type === MovementType.OUT) {
+        const available = await calculateProductStock(manager, product.id);
+        if (available < dto.quantity) {
+          throw new BadRequestException(
+            `Stok produk "${product.name}" tidak mencukupi. Stok tersedia: ${available}, diminta: ${dto.quantity}`,
+          );
+        }
+      }
+
+      const item = itemRepo.create(dto);
+      const saved = await itemRepo.save(item);
+
+      await syncProductStock(
+        manager,
+        product.id,
+        `Stok produk "${product.name}" tidak mencukupi`,
+      );
+
+      return saved;
+    });
   }
 
   findAll() {
@@ -86,66 +106,102 @@ export class StockMovementItemsService {
   }
 
   async update(id: string, dto: UpdateStockMovementItemDto) {
-    const item = await this.findOne(id);
-    const product = await this.productRepo.findOne({
-      where: { id: item.productId },
-    });
-    if (!product) {
-      throw new NotFoundException('Produk tidak ditemukan');
-    }
+    return this.itemRepo.manager.transaction(async (manager) => {
+      const itemRepo = manager.getRepository(StockMovementItem);
+      const movementRepo = manager.getRepository(StockMovement);
+      const productRepo = manager.getRepository(Product);
 
-    // kalau kuantitas berubah, sesuaikan stok berdasarkan selisihnya
-    if (dto.quantity !== undefined && dto.quantity !== item.quantity) {
-      // kembalikan efek kuantitas lama
-      if (item.stockMovement.type === MovementType.IN) {
-        product.currentStock -= item.quantity;
-      } else {
-        product.currentStock += item.quantity;
+      const item = await itemRepo.findOne({
+        where: { id },
+        relations: { stockMovement: true, product: true },
+      });
+      if (!item) {
+        throw new NotFoundException(
+          `Detail item transaksi ID ${id} tidak ditemukan`,
+        );
       }
 
-      // terapkan kuantitas baru
-      if (item.stockMovement.type === MovementType.IN) {
-        product.currentStock += dto.quantity;
-      } else {
-        if (product.currentStock < dto.quantity) {
-          throw new BadRequestException(
-            `Stok produk tidak mencukupi untuk pembaruan kuantitas. Stok tersedia: ${product.currentStock}`,
+      const previousProductId = item.productId;
+
+      // pindah dokumen transaksi
+      if (
+        dto.stockMovementId &&
+        dto.stockMovementId !== item.stockMovementId
+      ) {
+        const movement = await movementRepo.findOne({
+          where: { id: dto.stockMovementId },
+        });
+        if (!movement) {
+          throw new NotFoundException(
+            `Transaksi stok ID ${dto.stockMovementId} tidak ditemukan`,
           );
         }
-        product.currentStock -= dto.quantity;
+        item.stockMovement = movement;
       }
 
-      await this.productRepo.save(product);
-    }
+      // pindah produk
+      if (dto.productId && dto.productId !== item.productId) {
+        const product = await productRepo.findOne({
+          where: { id: dto.productId },
+        });
+        if (!product) {
+          throw new NotFoundException(
+            `Produk ID ${dto.productId} tidak ditemukan`,
+          );
+        }
+        item.product = product;
+      }
 
-    Object.assign(item, dto);
-    return this.itemRepo.save(item);
+      assignDefined(item, dto);
+      await itemRepo.save(item);
+
+      // hitung ulang stok produk lama dan produk baru (jika berpindah)
+      const affectedProductIds = new Set([
+        previousProductId,
+        item.productId,
+      ]);
+      for (const productId of affectedProductIds) {
+        await syncProductStock(
+          manager,
+          productId,
+          STOCK_NOT_ENOUGH_MESSAGE,
+        );
+      }
+
+      return itemRepo.findOne({
+        where: { id },
+        relations: { stockMovement: true, product: true },
+      });
+    });
   }
 
   async remove(id: string) {
-    const item = await this.findOne(id);
-    const product = await this.productRepo.findOne({
-      where: { id: item.productId },
-    });
+    return this.itemRepo.manager.transaction(async (manager) => {
+      const itemRepo = manager.getRepository(StockMovementItem);
 
-    // kembalikan stok produk seperti sebelum item dihapus
-    if (product && item.stockMovement) {
-      if (item.stockMovement.type === MovementType.IN) {
-        if (product.currentStock < item.quantity) {
-          throw new BadRequestException(
-            'Item barang masuk tidak dapat dihapus karena stok tersebut sudah terpakai di transaksi keluar',
-          );
-        }
-        product.currentStock -= item.quantity;
-      } else if (item.stockMovement.type === MovementType.OUT) {
-        product.currentStock += item.quantity;
+      const item = await itemRepo.findOne({
+        where: { id },
+        relations: { stockMovement: true, product: true },
+      });
+      if (!item) {
+        throw new NotFoundException(
+          `Detail item transaksi ID ${id} tidak ditemukan`,
+        );
       }
-      await this.productRepo.save(product);
-    }
 
-    await this.itemRepo.softRemove(item);
-    return {
-      message: `Item transaksi ID ${id} berhasil dihapus dan stok produk telah diperbarui`,
-    };
+      const productId = item.productId;
+
+      await itemRepo.softRemove(item);
+
+      await syncProductStock(
+        manager,
+        productId,
+        'Item barang masuk tidak dapat dihapus karena stok tersebut sudah terpakai di transaksi keluar',
+      );
+
+      return {
+        message: `Item transaksi ID ${id} berhasil dihapus dan stok produk telah diperbarui`,
+      };
+    });
   }
 }

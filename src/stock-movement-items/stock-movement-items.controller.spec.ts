@@ -8,10 +8,12 @@ describe('StockMovementItemsController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [StockMovementItemsController],
-      providers: [StockMovementItemsService],
+      providers: [{ provide: StockMovementItemsService, useValue: {} }],
     }).compile();
 
-    controller = module.get<StockMovementItemsController>(StockMovementItemsController);
+    controller = module.get<StockMovementItemsController>(
+      StockMovementItemsController,
+    );
   });
 
   it('should be defined', () => {

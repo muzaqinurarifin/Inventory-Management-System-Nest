@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { Category } from './entities/category.entity.js';
 import { CreateCategoryDto } from './dto/create-category.dto.js';
 import { UpdateCategoryDto } from './dto/update-category.dto.js';
+import { assignDefined } from '../common/assign-defined.js';
 
 @Injectable()
 export class CategoriesService {
@@ -44,7 +45,15 @@ export class CategoriesService {
 
   async update(id: string, dto: UpdateCategoryDto) {
     const category = await this.findOne(id);
-    Object.assign(category, dto);
+    if (dto.name && dto.name !== category.name) {
+      const exists = await this.categoryRepo.findOne({
+        where: { name: dto.name },
+      });
+      if (exists) {
+        throw new ConflictException(`Kategori ${dto.name} sudah ada`);
+      }
+    }
+    assignDefined(category, dto);
     return this.categoryRepo.save(category);
   }
 

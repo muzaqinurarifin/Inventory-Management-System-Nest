@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { Supplier } from './entities/supplier.entity.js';
 import { CreateSupplierDto } from './dto/create-supplier.dto.js';
 import { UpdateSupplierDto } from './dto/update-supplier.dto.js';
+import { assignDefined } from '../common/assign-defined.js';
 
 @Injectable()
 export class SuppliersService {
@@ -44,7 +45,15 @@ export class SuppliersService {
 
   async update(id: string, dto: UpdateSupplierDto) {
     const supplier = await this.findOne(id);
-    Object.assign(supplier, dto);
+    if (dto.email && dto.email !== supplier.email) {
+      const exists = await this.supplierRepo.findOne({
+        where: { email: dto.email },
+      });
+      if (exists) {
+        throw new ConflictException(`Email pemasok ${dto.email} sudah terdaftar`);
+      }
+    }
+    assignDefined(supplier, dto);
     return this.supplierRepo.save(supplier);
   }
 
